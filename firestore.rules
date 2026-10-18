@@ -1,0 +1,120 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------------------------------------------------------------------------
+    // HELPER FUNCTIONS
+    // -------------------------------------------------------------------------
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'admin' ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        )
+      );
+    }
+
+    // -------------------------------------------------------------------------
+    // USERS COLLECTION: users/{userId}
+    // -------------------------------------------------------------------------
+    match /users/{userId} {
+      // Users can only read their own profile; admins can inspect all profiles
+      allow read: if isOwner(userId) || isAdmin();
+
+      // Users can only create their own profile document with forced role 'user'
+      // Strictly prevents client from assigning admin or venue_owner privileges on registration
+      allow create: if isOwner(userId) &&
+        request.resource.data.uid == userId &&
+        request.resource.data.role == 'user';
+
+      // Users can update only permitted profile fields (name, phone, avatarUrl, preferredCity, updatedAt)
+      // Strictly prevents changing role, uid, email, or createdAt
+      allow update: if (
+        isOwner(userId) &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'uid', 'email', 'createdAt'])
+      ) || isAdmin();
+
+      // Deletion is strictly reserved for administrators
+      allow delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------------------------
+    // VENUES COLLECTION: venues/{venueId}
+    // -------------------------------------------------------------------------
+    match /venues/{venueId} {
+      // Public users can only read active approved venues
+      // Inactive or pending venues are visible only to owners and admins
+      allow read: if resource.data.status == 'active' ||
+        isAdmin() ||
+        (isAuthenticated() && resource.data.ownerId == request.auth.uid);
+
+      // Prevent unauthorized venue modifications; only admins and verified venue owners can write
+      allow create, update, delete: if isAdmin() || (
+        isAuthenticated() &&
+        request.auth.uid == resource.data.ownerId &&
+        request.auth.token.role == 'venue_owner'
+      );
+
+      // -----------------------------------------------------------------------
+      // VENUE REVIEWS SUBCOLLECTION: venues/{venueId}/reviews/{reviewId}
+      // -----------------------------------------------------------------------
+      match /reviews/{reviewId} {
+        // Anyone can read reviews for an approved active venue
+        allow read: if get(/databases/$(database)/documents/venues/$(venueId)).data.status == 'active' || isAdmin();
+
+        // Only authenticated users can write reviews under their own identity
+        allow create: if isAuthenticated() &&
+          request.resource.data.userId == request.auth.uid &&
+          request.resource.data.rating is number &&
+          request.resource.data.rating >= 1 &&
+          request.resource.data.rating <= 5 &&
+          request.resource.data.comment is string &&
+          request.resource.data.comment.size() > 0;
+
+        // Authors can update their own reviews without altering venueId or userId
+        allow update: if isOwner(resource.data.userId) &&
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['userId', 'venueId', 'createdAt']);
+
+        // Only author or admin can remove a review
+        allow delete: if isOwner(resource.data.userId) || isAdmin();
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // BOOKINGS COLLECTION: bookings/{bookingId}
+    // -------------------------------------------------------------------------
+    match /bookings/{bookingId} {
+      // Protect booking data from unauthorized access:
+      // Users can only view their own bookings; venue owners can see bookings for their venues
+      allow read: if isOwner(resource.data.userId) ||
+        isAdmin() ||
+        (isAuthenticated() && resource.data.venueOwnerId == request.auth.uid);
+
+      // Controlled creation: user can only book under their own verified identity
+      allow create: if isOwner(request.resource.data.userId) &&
+        request.resource.data.status == 'Confirmed';
+
+      // Users can only update their own bookings to request cancellation
+      // Prevents modifying pricing, venue, dates, or other players' records
+      allow update: if isOwner(resource.data.userId) &&
+        request.resource.data.status == 'Cancelled' &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'userId', 'venueId', 'pricePerHour', 'totalPrice', 'createdAt'
+        ]);
+
+      // Direct booking deletion is forbidden to preserve transaction audit trail
+      allow delete: if false;
+    }
+
+  }
+}

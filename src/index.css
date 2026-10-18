@@ -1,0 +1,116 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #040906;
+  --bg-secondary: #08120b;
+  --accent-green: #00FF66;
+  --accent-emerald: #10B981;
+  --accent-glow: rgba(0, 255, 102, 0.25);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: #ffffff;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6, .font-heading {
+  font-family: 'Outfit', sans-serif;
+}
+
+/* Glassmorphism utilities */
+.glass-panel {
+  background: rgba(12, 24, 16, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.glass-panel-glow {
+  background: rgba(10, 22, 14, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 255, 102, 0.2);
+  box-shadow: 0 0 30px rgba(0, 255, 102, 0.15), 0 20px 40px rgba(0, 0, 0, 0.6);
+}
+
+.glass-nav {
+  background: rgba(4, 9, 6, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #040906;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #152d1d;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00FF66;
+}
+
+/* Custom dark-green scrollbar for independent venue results scrolling */
+.custom-results-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-results-scroll::-webkit-scrollbar-track {
+  background: rgba(4, 9, 6, 0.4);
+  border-radius: 9999px;
+}
+
+.custom-results-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 102, 0.35);
+  border-radius: 9999px;
+}
+
+.custom-results-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 102, 0.8);
+}
+
+/* 3D perspective utilities */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+/* Text Gradients */
+.text-gradient-green {
+  background: linear-gradient(135deg, #ffffff 0%, #00FF66 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-bright {
+  background: linear-gradient(135deg, #00FF66 0%, #10B981 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Glow effects */
+.glow-accent {
+  box-shadow: 0 0 30px var(--accent-glow);
+}
+
+.glow-text {
+  text-shadow: 0 0 20px rgba(0, 255, 102, 0.5);
+}
